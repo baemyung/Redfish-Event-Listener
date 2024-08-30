@@ -68,6 +68,8 @@ def read_my_socket(active_socket):
                 break
 
     response_array = data.decode("utf-8").split("\r\n")
+    my_logger.info("DATA={}".format(data));
+    my_logger.info("response={}".format(response_array[-1]));
     r_type, r_headers, r_payload = response_array[0], response_array[1:-1], json.loads(response_array[-1])
     r_method = r_type.split(' ')[0]
     
