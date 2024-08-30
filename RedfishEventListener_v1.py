@@ -42,6 +42,7 @@ config = {
     'passwords': [],
     "logintype": [],
     'verbose': False,
+    'keep' : False,
     'format': None,
     'expand': None,
     'resourcetypes': None,
@@ -209,6 +210,7 @@ if __name__ == '__main__':
     # config
     argget.add_argument('-c', '--config', type=str, default='./config.ini', help='Location of the configuration file; default: "./config.ini"')
     argget.add_argument('-v', '--verbose', action='count', default=0, help='Verbose output')
+    argget.add_argument('-k', '--keep', action='count', default=0, help='Leave subscription at close')
     args = argget.parse_args()
 
     # Initiate Configuration File
@@ -271,6 +273,9 @@ if __name__ == '__main__':
     config['verbose'] = args.verbose
     if config['verbose']:
         print(json.dumps(config, indent=4))
+
+    # unsubscribe-at-close
+    config['keep'] = args.keep
 
     # Perform the Subscription if provided
     target_contexts = []
@@ -351,14 +356,15 @@ if __name__ == '__main__':
         signal.signal(signal.SIGINT, handler_end)
         socket_server.close()
 
-        for name, ctx, unsub_id in target_contexts:
-            my_logger.info('\nClosing {}'.format(name))
-            try:
-                redfish_utilities.delete_event_subscription(ctx, unsub_id)
-                ctx.logout()
-            except Exception:
-                my_logger.info('Unable to unsubscribe for events with {}'.format(ctx.get_base_url()))
-                my_logger.info(traceback.print_exc())
+        if not config['keep']:
+            for name, ctx, unsub_id in target_contexts:
+                my_logger.info('\nClosing {}'.format(name))
+                try:
+                    redfish_utilities.delete_event_subscription(ctx, unsub_id)
+                    ctx.logout()
+                except Exception:
+                    my_logger.info('Unable to unsubscribe for events with {}'.format(ctx.get_base_url()))
+                    my_logger.info(traceback.print_exc())
 
         sys.exit(0)
     signal.signal(signal.SIGINT, handler)
